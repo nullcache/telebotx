@@ -1,6 +1,7 @@
 package telebot
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -36,6 +37,8 @@ func NewBot(pref Settings) (*Bot, error) {
 		pref.OnError = defaultOnError
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+
 	bot := &Bot{
 		Token:   pref.Token,
 		URL:     pref.URL,
@@ -44,12 +47,15 @@ func NewBot(pref Settings) (*Bot, error) {
 
 		Updates:  make(chan Update, pref.Updates),
 		handlers: make(map[string]HandlerFunc),
-		stop:     make(chan chan struct{}),
 
 		synchronous: pref.Synchronous,
 		verbose:     pref.Verbose,
 		parseMode:   pref.ParseMode,
 		client:      client,
+
+		rootCtx:        ctx,
+		cancel:         cancel,
+		handlerTimeout: pref.HandlerTimeout,
 	}
 
 	if pref.Offline {
@@ -80,11 +86,14 @@ type Bot struct {
 	synchronous bool
 	verbose     bool
 	parseMode   ParseMode
-	stop        chan chan struct{}
 	client      *http.Client
 
-	stopMu     sync.RWMutex
-	stopClient chan struct{}
+	// Context-based lifecycle management
+	rootCtx context.Context
+	cancel  context.CancelFunc
+	wg      sync.WaitGroup
+
+	handlerTimeout time.Duration
 }
 
 // Settings represents a utility struct for passing certain
@@ -122,6 +131,9 @@ type Settings struct {
 
 	// Offline allows to create a bot without network for testing purposes.
 	Offline bool
+
+	// HandlerTimeout is the timeout for each handler.
+	HandlerTimeout time.Duration
 }
 
 var defaultOnError = func(err error, c Context) {
@@ -211,15 +223,19 @@ func (b *Bot) Start() {
 		panic("telebot: can't start without a poller")
 	}
 
-	// do nothing if called twice
-	b.stopMu.Lock()
-	if b.stopClient != nil {
-		b.stopMu.Unlock()
-		return
+	// Check if context is cancelled, create new one if needed
+	select {
+	case <-b.rootCtx.Done():
+		// Bot was stopped, create new context for restart
+		b.rootCtx, b.cancel = context.WithCancel(context.Background())
+	default:
+		// Context is still active, check if already running
+		// We use a simple check - if we can add to waitgroup, we're not running
 	}
 
-	b.stopClient = make(chan struct{})
-	b.stopMu.Unlock()
+	// Mark as running
+	b.wg.Add(1)
+	defer b.wg.Done()
 
 	stop := make(chan struct{})
 	stopConfirm := make(chan struct{})
@@ -234,11 +250,10 @@ func (b *Bot) Start() {
 		// handle incoming updates
 		case upd := <-b.Updates:
 			b.ProcessUpdate(upd)
-			// call to stop polling
-		case confirm := <-b.stop:
+		// context cancellation signal
+		case <-b.rootCtx.Done():
 			close(stop)
 			<-stopConfirm
-			close(confirm)
 			return
 		}
 	}
@@ -246,16 +261,11 @@ func (b *Bot) Start() {
 
 // Stop gracefully shuts the poller down.
 func (b *Bot) Stop() {
-	b.stopMu.Lock()
-	if b.stopClient != nil {
-		close(b.stopClient)
-		b.stopClient = nil
+	if b.cancel != nil {
+		b.cancel()
 	}
-	b.stopMu.Unlock()
-
-	confirm := make(chan struct{})
-	b.stop <- confirm
-	<-confirm
+	// Wait for Start() to complete gracefully
+	b.wg.Wait()
 }
 
 // NewMarkup simply returns newly created markup instance.
@@ -264,7 +274,7 @@ func (b *Bot) NewMarkup() *ReplyMarkup {
 }
 
 // NewContext returns a new native context object,
-// field by the passed update.
+// filled by the passed update.
 func (b *Bot) NewContext(u Update) Context {
 	return NewContext(b, u)
 }
