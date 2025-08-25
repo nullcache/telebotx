@@ -15,12 +15,12 @@ type Config struct {
 
 // Unmarshal parses the whole config into the out value. It's useful when you want to
 // describe and to pre-define the fields in your custom configuration struct.
-func (c *Config) Unmarshal(v interface{}) error {
+func (c *Config) Unmarshal(v any) error {
 	return c.v.Unmarshal(v)
 }
 
 // UnmarshalKey parses the specific key in the config into the out value.
-func (c *Config) UnmarshalKey(k string, v interface{}) error {
+func (c *Config) UnmarshalKey(k string, v any) error {
 	return c.v.UnmarshalKey(k, v)
 }
 
@@ -37,13 +37,13 @@ func (c *Config) Get(k string) *Config {
 // Slice returns a child slice of objects wrapped into Config.
 // If the field isn't a slice, returns nil.
 func (c *Config) Slice(k string) (slice []*Config) {
-	a, ok := c.v.Get(k).([]interface{})
+	a, ok := c.v.Get(k).([]any)
 	if !ok {
 		return nil
 	}
 
 	for i := range a {
-		m, ok := a[i].(map[string]interface{})
+		m, ok := a[i].(map[string]any)
 		if !ok {
 			return nil
 		}

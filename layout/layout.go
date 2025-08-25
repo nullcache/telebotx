@@ -35,8 +35,8 @@ type (
 	// Button is a shortcut for tele.Btn.
 	Button struct {
 		tele.Btn `yaml:",inline"`
-		Data     interface{} `yaml:"data"`
-		IsReply  bool        `yaml:"reply"`
+		Data     any  `yaml:"data"`
+		IsReply  bool `yaml:"reply"`
 	}
 
 	// Markup represents layout-specific markup to be parsed.
@@ -65,7 +65,7 @@ type (
 	}
 
 	// ResultContent represents any kind of InputMessageContent and implements it.
-	ResultContent map[string]interface{}
+	ResultContent map[string]any
 )
 
 // New parses the given layout file.
@@ -119,7 +119,7 @@ var builtinFuncs = template.FuncMap{
 	// Built-in blank and helper functions.
 	"locale": func() string { return "" },
 	"config": func(string) string { return "" },
-	"text":   func(string, ...interface{}) string { return "" },
+	"text":   func(string, ...any) string { return "" },
 }
 
 // Settings returns built telebot Settings required for bot initializing.
@@ -213,8 +213,8 @@ func (lt *Layout) Commands() (cmds []tele.Command) {
 //
 //	b.SetCommands(lt.CommandsLocale("en"), "en")
 //	b.SetCommands(lt.CommandsLocale("ru"), "ru")
-func (lt *Layout) CommandsLocale(locale string, args ...interface{}) (cmds []tele.Command) {
-	var arg interface{}
+func (lt *Layout) CommandsLocale(locale string, args ...any) (cmds []tele.Command) {
+	var arg any
 	if len(args) > 0 {
 		arg = args[0]
 	}
@@ -252,7 +252,7 @@ func (lt *Layout) CommandsLocale(locale string, args ...interface{}) (cmds []tel
 //	func onStart(c tele.Context) error {
 //		return c.Send(lt.Text(c, "start", c.Sender()))
 //	}
-func (lt *Layout) Text(c tele.Context, k string, args ...interface{}) string {
+func (lt *Layout) Text(c tele.Context, k string, args ...any) string {
 	locale, ok := lt.Locale(c)
 	if !ok {
 		return ""
@@ -263,13 +263,13 @@ func (lt *Layout) Text(c tele.Context, k string, args ...interface{}) string {
 
 // TextLocale returns a localized text processed with text/template engine.
 // See Text for more details.
-func (lt *Layout) TextLocale(locale, k string, args ...interface{}) string {
+func (lt *Layout) TextLocale(locale, k string, args ...any) string {
 	tmpl, ok := lt.locales[locale]
 	if !ok {
 		return ""
 	}
 
-	var arg interface{}
+	var arg any
 	if len(args) > 0 {
 		arg = args[0]
 	}
@@ -321,7 +321,7 @@ func (lt *Layout) Callback(k string) tele.CallbackEndpoint {
 //	m := b.NewMarkup()
 //	m.Inline(m.Row(btns...))
 //	// Your generated markup is ready.
-func (lt *Layout) Button(c tele.Context, k string, args ...interface{}) *tele.Btn {
+func (lt *Layout) Button(c tele.Context, k string, args ...any) *tele.Btn {
 	locale, ok := lt.Locale(c)
 	if !ok {
 		return nil
@@ -332,13 +332,13 @@ func (lt *Layout) Button(c tele.Context, k string, args ...interface{}) *tele.Bt
 
 // ButtonLocale returns a localized button processed with text/template engine.
 // See Button for more details.
-func (lt *Layout) ButtonLocale(locale, k string, args ...interface{}) *tele.Btn {
+func (lt *Layout) ButtonLocale(locale, k string, args ...any) *tele.Btn {
 	btn, ok := lt.buttons[k]
 	if !ok {
 		return nil
 	}
 
-	var arg interface{}
+	var arg any
 	if len(args) > 0 {
 		arg = args[0]
 	}
@@ -386,7 +386,7 @@ func (lt *Layout) ButtonLocale(locale, k string, args ...interface{}) *tele.Btn 
 //			lt.Markup(c, "menu"),
 //		)
 //	}
-func (lt *Layout) Markup(c tele.Context, k string, args ...interface{}) *tele.ReplyMarkup {
+func (lt *Layout) Markup(c tele.Context, k string, args ...any) *tele.ReplyMarkup {
 	locale, ok := lt.Locale(c)
 	if !ok {
 		return nil
@@ -397,13 +397,13 @@ func (lt *Layout) Markup(c tele.Context, k string, args ...interface{}) *tele.Re
 
 // MarkupLocale returns a localized markup processed with text/template engine.
 // See Markup for more details.
-func (lt *Layout) MarkupLocale(locale, k string, args ...interface{}) *tele.ReplyMarkup {
+func (lt *Layout) MarkupLocale(locale, k string, args ...any) *tele.ReplyMarkup {
 	markup, ok := lt.markups[k]
 	if !ok {
 		return nil
 	}
 
-	var arg interface{}
+	var arg any
 	if len(args) > 0 {
 		arg = args[0]
 	}
@@ -457,7 +457,7 @@ func (lt *Layout) MarkupLocale(locale, k string, args ...interface{}) *tele.Repl
 //			CacheTime: 100,
 //		})
 //	}
-func (lt *Layout) Result(c tele.Context, k string, args ...interface{}) tele.Result {
+func (lt *Layout) Result(c tele.Context, k string, args ...any) tele.Result {
 	locale, ok := lt.Locale(c)
 	if !ok {
 		return nil
@@ -468,13 +468,13 @@ func (lt *Layout) Result(c tele.Context, k string, args ...interface{}) tele.Res
 
 // ResultLocale returns a localized result processed with text/template engine.
 // See Result for more details.
-func (lt *Layout) ResultLocale(locale, k string, args ...interface{}) tele.Result {
+func (lt *Layout) ResultLocale(locale, k string, args ...any) tele.Result {
 	result, ok := lt.results[k]
 	if !ok {
 		return nil
 	}
 
-	var arg interface{}
+	var arg any
 	if len(args) > 0 {
 		arg = args[0]
 	}
@@ -581,7 +581,7 @@ func (lt *Layout) template(tmpl *template.Template, locale string) *template.Tem
 
 	// Redefining built-in blank functions
 	funcs["config"] = lt.String
-	funcs["text"] = func(k string, args ...interface{}) string { return lt.TextLocale(locale, k, args...) }
+	funcs["text"] = func(k string, args ...any) string { return lt.TextLocale(locale, k, args...) }
 	funcs["locale"] = func() string { return locale }
 
 	return tmpl.Funcs(funcs)

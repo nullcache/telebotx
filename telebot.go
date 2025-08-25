@@ -149,9 +149,9 @@ const (
 	ModeHTML       ParseMode = "HTML"
 )
 
-// M is a shortcut for map[string]interface{}.
+// M is a shortcut for map[string]any.
 // Useful for passing arguments to the layout functions.
-type M = map[string]interface{}
+type M = map[string]any
 
 // Flag returns a pointer to the given bool.
 // Useful for passing the three-state flags to a Bot API.

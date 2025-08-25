@@ -186,7 +186,7 @@ var (
 // Middleware usage:
 //
 //	b.Handle("/ban", onBan, middleware.Whitelist(ids...))
-func (b *Bot) Handle(endpoint interface{}, h HandlerFunc, m ...MiddlewareFunc) {
+func (b *Bot) Handle(endpoint any, h HandlerFunc, m ...MiddlewareFunc) {
 	end := extractEndpoint(endpoint)
 	if end == "" {
 		panic("telebot: unsupported endpoint")
@@ -202,7 +202,7 @@ func (b *Bot) Handle(endpoint interface{}, h HandlerFunc, m ...MiddlewareFunc) {
 }
 
 // Trigger executes the registered handler by the endpoint.
-func (b *Bot) Trigger(endpoint interface{}, c Context) error {
+func (b *Bot) Trigger(endpoint any, c Context) error {
 	end := extractEndpoint(endpoint)
 	if end == "" {
 		return fmt.Errorf("telebot: unsupported endpoint")
@@ -284,7 +284,7 @@ func (b *Bot) NewContext(u Update) Context {
 //
 // NOTE:
 //
-//	Since most arguments are of type interface{}, but have pointer
+//	Since most arguments are of type any, but have pointer
 //	method receivers, make sure to pass them by-pointer, NOT by-value.
 //
 // What is a send option exactly? It can be one of the following types:
@@ -293,7 +293,7 @@ func (b *Bot) NewContext(u Update) Context {
 //   - *ReplyMarkup (a component of SendOptions)
 //   - Option (a shortcut flag for popular options)
 //   - ParseMode (HTML, Markdown, etc)
-func (b *Bot) Send(to Recipient, what interface{}, opts ...interface{}) (*Message, error) {
+func (b *Bot) Send(to Recipient, what any, opts ...any) (*Message, error) {
 	if to == nil {
 		return nil, ErrBadRecipient
 	}
@@ -312,7 +312,7 @@ func (b *Bot) Send(to Recipient, what interface{}, opts ...interface{}) (*Messag
 
 // SendPaid sends multiple instances of paid media as a single message.
 // To include the caption, make sure the first PaidInputtable of an album has it.
-func (b *Bot) SendPaid(to Recipient, stars int, a PaidAlbum, opts ...interface{}) (*Message, error) {
+func (b *Bot) SendPaid(to Recipient, stars int, a PaidAlbum, opts ...any) (*Message, error) {
 	if to == nil {
 		return nil, ErrBadRecipient
 	}
@@ -360,7 +360,7 @@ func (b *Bot) SendPaid(to Recipient, stars int, a PaidAlbum, opts ...interface{}
 // SendAlbum sends multiple instances of media as a single message.
 // To include the caption, make sure the first Inputtable of an album has it.
 // From all existing options, it only supports tele.Silent.
-func (b *Bot) SendAlbum(to Recipient, a Album, opts ...interface{}) ([]Message, error) {
+func (b *Bot) SendAlbum(to Recipient, a Album, opts ...any) ([]Message, error) {
 	if to == nil {
 		return nil, ErrBadRecipient
 	}
@@ -430,7 +430,7 @@ func (b *Bot) SendAlbum(to Recipient, a Album, opts ...interface{}) ([]Message, 
 
 // Reply behaves just like Send() with an exception of "reply-to" indicator.
 // This function will panic upon nil Message.
-func (b *Bot) Reply(to *Message, what interface{}, opts ...interface{}) (*Message, error) {
+func (b *Bot) Reply(to *Message, what any, opts ...any) (*Message, error) {
 	sendOpts := b.extractOptions(opts)
 	if sendOpts == nil {
 		sendOpts = &SendOptions{}
@@ -442,7 +442,7 @@ func (b *Bot) Reply(to *Message, what interface{}, opts ...interface{}) (*Messag
 
 // Forward behaves just like Send() but of all options it only supports Silent (see Bots API).
 // This function will panic upon nil Editable.
-func (b *Bot) Forward(to Recipient, msg Editable, opts ...interface{}) (*Message, error) {
+func (b *Bot) Forward(to Recipient, msg Editable, opts ...any) (*Message, error) {
 	if to == nil {
 		return nil, ErrBadRecipient
 	}
@@ -479,7 +479,7 @@ func (b *Bot) ForwardMany(to Recipient, msgs []Editable, opts ...*SendOptions) (
 // Copy behaves just like Forward() but the copied message doesn't have a link to the original message (see Bots API).
 //
 // This function will panic upon nil Editable.
-func (b *Bot) Copy(to Recipient, msg Editable, opts ...interface{}) (*Message, error) {
+func (b *Bot) Copy(to Recipient, msg Editable, opts ...any) (*Message, error) {
 	if to == nil {
 		return nil, ErrBadRecipient
 	}
@@ -531,7 +531,7 @@ func (b *Bot) CopyMany(to Recipient, msgs []Editable, opts ...*SendOptions) ([]M
 //	b.Edit(m, tele.Location{42.1337, 69.4242})
 //	b.Edit(c, "edit inline message from the callback")
 //	b.Edit(r, "edit message from chosen inline result")
-func (b *Bot) Edit(msg Editable, what interface{}, opts ...interface{}) (*Message, error) {
+func (b *Bot) Edit(msg Editable, what any, opts ...any) (*Message, error) {
 	var (
 		method string
 		params = make(map[string]string)
@@ -625,7 +625,7 @@ func (b *Bot) EditReplyMarkup(msg Editable, markup *ReplyMarkup) (*Message, erro
 //
 // If edited message is sent by the bot, returns it,
 // otherwise returns nil and ErrTrueResult.
-func (b *Bot) EditCaption(msg Editable, caption string, opts ...interface{}) (*Message, error) {
+func (b *Bot) EditCaption(msg Editable, caption string, opts ...any) (*Message, error) {
 	msgID, chatID := msg.MessageSig()
 
 	params := map[string]string{
@@ -660,7 +660,7 @@ func (b *Bot) EditCaption(msg Editable, caption string, opts ...interface{}) (*M
 //
 //	b.EditMedia(m, &tele.Photo{File: tele.FromDisk("chicken.jpg")})
 //	b.EditMedia(m, &tele.Video{File: tele.FromURL("http://video.mp4")})
-func (b *Bot) EditMedia(msg Editable, media Inputtable, opts ...interface{}) (*Message, error) {
+func (b *Bot) EditMedia(msg Editable, media Inputtable, opts ...any) (*Message, error) {
 	var (
 		repr  string
 		file  = media.MediaFile()
@@ -806,7 +806,7 @@ func (b *Bot) Notify(to Recipient, action ChatAction, threadID ...int) error {
 //	b.Ship(query)          // OK
 //	b.Ship(query, opts...) // OK with options
 //	b.Ship(query, "Oops!") // Error message
-func (b *Bot) Ship(query *ShippingQuery, what ...interface{}) error {
+func (b *Bot) Ship(query *ShippingQuery, what ...any) error {
 	params := map[string]string{
 		"shipping_query_id": query.ID,
 	}
@@ -892,7 +892,7 @@ func (b *Bot) Answer(query *Query, resp *QueryResponse) error {
 func (b *Bot) AnswerWebApp(query *Query, r Result) (*WebAppMessage, error) {
 	r.Process(b)
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"web_app_query_id": query.ID,
 		"result":           r,
 	}
@@ -996,7 +996,7 @@ func (b *Bot) File(file *File) (io.ReadCloser, error) {
 //
 // If the message is sent by the bot, returns it,
 // otherwise returns nil and ErrTrueResult.
-func (b *Bot) StopLiveLocation(msg Editable, opts ...interface{}) (*Message, error) {
+func (b *Bot) StopLiveLocation(msg Editable, opts ...any) (*Message, error) {
 	msgID, chatID := msg.MessageSig()
 
 	params := map[string]string{
@@ -1020,7 +1020,7 @@ func (b *Bot) StopLiveLocation(msg Editable, opts ...interface{}) (*Message, err
 //
 // It supports ReplyMarkup.
 // This function will panic upon nil Editable.
-func (b *Bot) StopPoll(msg Editable, opts ...interface{}) (*Poll, error) {
+func (b *Bot) StopPoll(msg Editable, opts ...any) (*Poll, error) {
 	msgID, chatID := msg.MessageSig()
 
 	params := map[string]string{
@@ -1059,7 +1059,7 @@ func (b *Bot) Leave(chat Recipient) error {
 //
 // It supports Silent option.
 // This function will panic upon nil Editable.
-func (b *Bot) Pin(msg Editable, opts ...interface{}) error {
+func (b *Bot) Pin(msg Editable, opts ...any) error {
 	msgID, chatID := msg.MessageSig()
 
 	params := map[string]string{
@@ -1202,8 +1202,8 @@ func (b *Bot) MenuButton(chat *User) (*MenuButton, error) {
 //
 //   - MenuButtonType for simple menu buttons (default, commands)
 //   - MenuButton complete structure for web_app menu button type
-func (b *Bot) SetMenuButton(chat *User, mb interface{}) error {
-	params := map[string]interface{}{}
+func (b *Bot) SetMenuButton(chat *User, mb any) error {
+	params := map[string]any{}
 
 	// chat_id is optional
 	if chat != nil {
@@ -1353,7 +1353,7 @@ func (b *Bot) botInfo(language, key string) (*BotInfo, error) {
 	return resp.Result, nil
 }
 
-func extractEndpoint(endpoint interface{}) string {
+func extractEndpoint(endpoint any) string {
 	switch end := endpoint.(type) {
 	case string:
 		return end

@@ -162,7 +162,7 @@ func (b *Bot) Unban(chat *Chat, user *User, forBanned ...bool) error {
 func (b *Bot) Restrict(chat *Chat, member *ChatMember) error {
 	perms, until := member.Rights, member.RestrictedUntil
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"chat_id":     chat.Recipient(),
 		"user_id":     member.User.Recipient(),
 		"until_date":  strconv.FormatInt(until, 10),
@@ -187,7 +187,7 @@ func (b *Bot) Restrict(chat *Chat, member *ChatMember) error {
 //   - can pin messages
 //   - can promote members
 func (b *Bot) Promote(chat *Chat, member *ChatMember) error {
-	params := map[string]interface{}{
+	params := map[string]any{
 		"chat_id":      chat.Recipient(),
 		"user_id":      member.User.Recipient(),
 		"is_anonymous": member.Anonymous,
@@ -305,7 +305,7 @@ func (b *Bot) DefaultRights(forChannels bool) (*Rights, error) {
 // SetDefaultRights changes the default administrator rights requested by the bot
 // when it's added as an administrator to groups or channels.
 func (b *Bot) SetDefaultRights(rights Rights, forChannels bool) error {
-	params := map[string]interface{}{
+	params := map[string]any{
 		"rights":       rights,
 		"for_channels": forChannels,
 	}
@@ -314,7 +314,7 @@ func (b *Bot) SetDefaultRights(rights Rights, forChannels bool) error {
 	return err
 }
 
-func embedRights(p map[string]interface{}, rights Rights) {
+func embedRights(p map[string]any, rights Rights) {
 	data, _ := json.Marshal(rights)
 	_ = json.Unmarshal(data, &p)
 }

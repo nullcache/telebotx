@@ -2,7 +2,6 @@ package layout
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -29,7 +28,7 @@ type Settings struct {
 func (lt *Layout) UnmarshalYAML(data []byte) error {
 	var aux struct {
 		Settings *Settings
-		Config   map[string]interface{}
+		Config   map[string]any
 		Commands map[string]string
 		Buttons  yaml.MapSlice
 		Markups  yaml.MapSlice
@@ -92,7 +91,7 @@ func (lt *Layout) UnmarshalYAML(data []byte) error {
 		}
 
 		if !btn.IsReply && btn.Data != nil {
-			if a, ok := btn.Data.([]interface{}); ok {
+			if a, ok := btn.Data.([]any); ok {
 				s := make([]string, len(a))
 				for i, v := range a {
 					s[i] = fmt.Sprint(v)
@@ -241,12 +240,12 @@ func (lt *Layout) parseLocales(dir string) error {
 			return nil
 		}
 
-		data, err := ioutil.ReadFile(path)
+		data, err := os.ReadFile(path)
 		if err != nil {
 			return err
 		}
 
-		var texts map[string]interface{}
+		var texts map[string]any
 		if err := yaml.Unmarshal(data, &texts); err != nil {
 			return err
 		}

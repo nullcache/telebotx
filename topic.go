@@ -42,7 +42,7 @@ func (b *Bot) CreateTopic(chat *Chat, topic *Topic) (*Topic, error) {
 
 // EditTopic edits name and icon of a topic in a forum supergroup chat.
 func (b *Bot) EditTopic(chat *Chat, topic *Topic) error {
-	params := map[string]interface{}{
+	params := map[string]any{
 		"chat_id":           chat.Recipient(),
 		"message_thread_id": topic.ThreadID,
 	}
@@ -60,7 +60,7 @@ func (b *Bot) EditTopic(chat *Chat, topic *Topic) error {
 
 // CloseTopic closes an open topic in a forum supergroup chat.
 func (b *Bot) CloseTopic(chat *Chat, topic *Topic) error {
-	params := map[string]interface{}{
+	params := map[string]any{
 		"chat_id":           chat.Recipient(),
 		"message_thread_id": topic.ThreadID,
 	}
@@ -71,7 +71,7 @@ func (b *Bot) CloseTopic(chat *Chat, topic *Topic) error {
 
 // ReopenTopic reopens a closed topic in a forum supergroup chat.
 func (b *Bot) ReopenTopic(chat *Chat, topic *Topic) error {
-	params := map[string]interface{}{
+	params := map[string]any{
 		"chat_id":           chat.Recipient(),
 		"message_thread_id": topic.ThreadID,
 	}
@@ -82,7 +82,7 @@ func (b *Bot) ReopenTopic(chat *Chat, topic *Topic) error {
 
 // DeleteTopic deletes a forum topic along with all its messages in a forum supergroup chat.
 func (b *Bot) DeleteTopic(chat *Chat, topic *Topic) error {
-	params := map[string]interface{}{
+	params := map[string]any{
 		"chat_id":           chat.Recipient(),
 		"message_thread_id": topic.ThreadID,
 	}
@@ -93,7 +93,7 @@ func (b *Bot) DeleteTopic(chat *Chat, topic *Topic) error {
 
 // UnpinAllTopicMessages clears the list of pinned messages in a forum topic. The bot must be an administrator in the chat for this to work and must have the can_pin_messages administrator right in the supergroup.
 func (b *Bot) UnpinAllTopicMessages(chat *Chat, topic *Topic) error {
-	params := map[string]interface{}{
+	params := map[string]any{
 		"chat_id":           chat.Recipient(),
 		"message_thread_id": topic.ThreadID,
 	}
@@ -122,7 +122,7 @@ func (b *Bot) TopicIconStickers() ([]Sticker, error) {
 
 // EditGeneralTopic edits name of the 'General' topic in a forum supergroup chat.
 func (b *Bot) EditGeneralTopic(chat *Chat, topic *Topic) error {
-	params := map[string]interface{}{
+	params := map[string]any{
 		"chat_id": chat.Recipient(),
 		"name":    topic.Name,
 	}
@@ -133,7 +133,7 @@ func (b *Bot) EditGeneralTopic(chat *Chat, topic *Topic) error {
 
 // CloseGeneralTopic closes an open 'General' topic in a forum supergroup chat.
 func (b *Bot) CloseGeneralTopic(chat *Chat) error {
-	params := map[string]interface{}{
+	params := map[string]any{
 		"chat_id": chat.Recipient(),
 	}
 
@@ -143,7 +143,7 @@ func (b *Bot) CloseGeneralTopic(chat *Chat) error {
 
 // ReopenGeneralTopic reopens a closed 'General' topic in a forum supergroup chat.
 func (b *Bot) ReopenGeneralTopic(chat *Chat) error {
-	params := map[string]interface{}{
+	params := map[string]any{
 		"chat_id": chat.Recipient(),
 	}
 
@@ -153,7 +153,7 @@ func (b *Bot) ReopenGeneralTopic(chat *Chat) error {
 
 // HideGeneralTopic hides the 'General' topic in a forum supergroup chat.
 func (b *Bot) HideGeneralTopic(chat *Chat) error {
-	params := map[string]interface{}{
+	params := map[string]any{
 		"chat_id": chat.Recipient(),
 	}
 
@@ -163,7 +163,7 @@ func (b *Bot) HideGeneralTopic(chat *Chat) error {
 
 // UnhideGeneralTopic unhides the 'General' topic in a forum supergroup chat.
 func (b *Bot) UnhideGeneralTopic(chat *Chat) error {
-	params := map[string]interface{}{
+	params := map[string]any{
 		"chat_id": chat.Recipient(),
 	}
 
@@ -175,7 +175,7 @@ func (b *Bot) UnhideGeneralTopic(chat *Chat) error {
 // The bot must be an administrator in the chat for this to work and must have the
 // can_pin_messages administrator right in the supergroup.
 func (b *Bot) UnpinAllGeneralTopicMessages(chat *Chat) error {
-	params := map[string]interface{}{
+	params := map[string]any{
 		"chat_id": chat.Recipient(),
 	}
 
