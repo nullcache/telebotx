@@ -1,48 +1,52 @@
-# Telebot
->"I never knew creating Telegram bots could be so _sexy_!"
+# TelebotX
 
-[![GoDoc](https://godoc.org/gopkg.in/telebot.v4?status.svg)](https://godoc.org/gopkg.in/telebot.v4)
-[![GitHub Actions](https://github.com/tucnak/telebot/actions/workflows/go.yml/badge.svg)](https://github.com/tucnak/telebot/actions)
-[![codecov.io](https://codecov.io/gh/tucnak/telebot/coverage.svg?branch=v3)](https://codecov.io/gh/tucnak/telebot)
-[![Discuss on Telegram](https://img.shields.io/badge/telegram-discuss-0088cc.svg)](https://t.me/go_telebot)
+> "Enhanced Telegram bot framework with custom modifications"
+
+[![GoDoc](https://pkg.go.dev/badge/github.com/nullcache/telebotx.svg)](https://pkg.go.dev/github.com/nullcache/telebotx)
+[![GitHub Actions](https://github.com/nullcache/telebotx/actions/workflows/go.yml/badge.svg)](https://github.com/nullcache/telebotx/actions)
+[![GitHub Release](https://img.shields.io/github/v/release/nullcache/telebotx)](https://github.com/nullcache/telebotx/releases)
 
 ```bash
-go get -u gopkg.in/telebot.v4
+go get -u github.com/nullcache/telebotx
 ```
 
-* [Overview](#overview)
-* [Getting Started](#getting-started)
-	- [Context](#context)
-	- [Middleware](#middleware)
-	- [Poller](#poller)
-	- [Commands](#commands)
-	- [Files](#files)
-	- [Sendable](#sendable)
-	- [Editable](#editable)
-	- [Keyboards](#keyboards)
-	- [Inline mode](#inline-mode)
-* [Contributing](#contributing)
-* [Donate](#donate)
-* [License](#license)
+- [Overview](#overview)
+- [Getting Started](#getting-started)
+  - [Context](#context)
+  - [Middleware](#middleware)
+  - [Poller](#poller)
+  - [Commands](#commands)
+  - [Files](#files)
+  - [Sendable](#sendable)
+  - [Editable](#editable)
+  - [Keyboards](#keyboards)
+  - [Inline mode](#inline-mode)
+- [Contributing](#contributing)
+- [Donate](#donate)
+- [License](#license)
 
 # Overview
-Telebot is a bot framework for [Telegram Bot API](https://core.telegram.org/bots/api).
-This package provides the best of its kind API for command routing, inline query requests and keyboards, as well
-as callbacks. Actually, I went a couple steps further, so instead of making a 1:1 API wrapper I chose to focus on
-the beauty of API and performance. Some strong sides of Telebot are:
 
-* Real concise API
-* Command routing
-* Middleware
-* Transparent File API
-* Effortless bot callbacks
+TelebotX is an enhanced Telegram bot framework based on the original Telebot, with custom modifications and improvements.
+This package provides an excellent API for command routing, inline query requests and keyboards, as well
+as callbacks. TelebotX focuses on both API beauty and performance.
 
-All the methods of Telebot API are _extremely_ easy to memorize and get used to. Also, consider Telebot a
-highload-ready solution. I'll test and benchmark the most popular actions and if necessary, optimize
-against them without sacrificing API quality.
+> **Note**: TelebotX is currently in early development (v0.x.x). The API may change before reaching v1.0.0.
+
+Some strong sides of TelebotX are:
+
+- Real concise API
+- Command routing
+- Middleware
+- Transparent File API
+- Effortless bot callbacks
+
+All the methods of TelebotX API are _extremely_ easy to memorize and get used to. Also, consider TelebotX a
+highload-ready solution with enhanced features and optimizations.
 
 # Getting Started
-Let's take a look at the minimal Telebot setup:
+
+Let's take a look at the minimal TelebotX setup:
 
 ```go
 package main
@@ -52,7 +56,7 @@ import (
 	"os"
 	"time"
 
-	tele "gopkg.in/telebot.v4"
+	tele "github.com/nullcache/telebotx"
 )
 
 func main() {
@@ -76,11 +80,11 @@ func main() {
 
 ```
 
-Simple, innit? Telebot's routing system takes care of delivering updates
+Simple, innit? TelebotX's routing system takes care of delivering updates
 to their endpoints, so in order to get to handle any meaningful event,
-all you got to do is just plug your function into one of the Telebot-provided
+all you got to do is just plug your function into one of the TelebotX-provided
 endpoints. You can find the full list
-[here](https://godoc.org/gopkg.in/telebot.v4#pkg-constants).
+[here](https://pkg.go.dev/github.com/nullcache/telebotx#pkg-constants).
 
 There are dozens of supported endpoints (see package consts). Let me know
 if you'd like to see some endpoint or endpoint ideas implemented. This system
@@ -88,6 +92,7 @@ is completely extensible, so I can introduce them without breaking
 backwards compatibility.
 
 ## Context
+
 Context is a special type that wraps a huge update structure and represents
 the context of the current event. It provides several helpers, which allow
 getting, for example, the chat that this update had been sent in, no matter
@@ -131,12 +136,14 @@ b.Handle(tele.OnQuery, func(c tele.Context) error {
 ```
 
 ## Middleware
-Telebot has a simple and recognizable way to set up middleware — chained functions with access to `Context`, called before the handler execution.
+
+TelebotX has a simple and recognizable way to set up middleware — chained functions with access to `Context`, called before the handler execution.
 
 Import a `middleware` package to get some basic out-of-box middleware
 implementations:
+
 ```go
-import "gopkg.in/telebot.v4/middleware"
+import "github.com/nullcache/telebotx/middleware"
 ```
 
 ```go
@@ -155,6 +162,7 @@ b.Handle(tele.OnText, onText, middleware.IgnoreVia())
 ```
 
 Custom middleware example:
+
 ```go
 // AutoResponder automatically responds to every callback update.
 func AutoResponder(next tele.HandlerFunc) tele.HandlerFunc {
@@ -168,7 +176,8 @@ func AutoResponder(next tele.HandlerFunc) tele.HandlerFunc {
 ```
 
 ## Poller
-Telebot doesn't really care how you provide it with incoming updates, as long
+
+TelebotX doesn't really care how you provide it with incoming updates, as long
 as you set it up with a Poller, or call ProcessUpdate for each update:
 
 ```go
@@ -189,11 +198,13 @@ type Poller interface {
 ```
 
 ## Commands
-When handling commands, Telebot supports both direct (`/command`) and group-like
+
+When handling commands, TelebotX supports both direct (`/command`) and group-like
 syntax (`/command@botname`) and will never deliver messages addressed to some
 other bot, even if [privacy mode](https://core.telegram.org/bots#privacy-mode) is off.
 
-For simplified deep-linking, Telebot also extracts payload:
+For simplified deep-linking, TelebotX also extracts payload:
+
 ```go
 // Command: /start <PAYLOAD>
 b.Handle("/start", func(c tele.Context) error {
@@ -202,6 +213,7 @@ b.Handle("/start", func(c tele.Context) error {
 ```
 
 For multiple arguments use:
+
 ```go
 // Command: /tags <tag1> <tag2> <...>
 b.Handle("/tags", func(c tele.Context) error {
@@ -213,11 +225,13 @@ b.Handle("/tags", func(c tele.Context) error {
 ```
 
 ## Files
->Telegram allows files up to 50 MB in size.
 
-Telebot allows to both upload (from disk or by URL) and download (from Telegram)
+> Telegram allows files up to 50 MB in size.
+
+TelebotX allows to both upload (from disk or by URL) and download (from Telegram)
 files in bot's scope. Also, sending any kind of media with a File created
 from disk will upload the file to Telegram automatically:
+
 ```go
 a := &tele.Audio{File: tele.FromDisk("file.ogg")}
 
@@ -227,7 +241,7 @@ fmt.Println(a.InCloud()) // false
 // Will upload the file from disk and send it to the recipient
 b.Send(recipient, a)
 
-// Next time you'll be sending this very *Audio, Telebot won't
+// Next time you'll be sending this very *Audio, TelebotX won't
 // re-upload the same file but rather utilize its Telegram FileID
 b.Send(otherRecipient, a)
 
@@ -241,11 +255,12 @@ to marshal them into whatever format, `File` only contain public fields, so no
 data will ever be lost.
 
 ## Sendable
-Send is undoubtedly the most important method in Telebot. `Send()` accepts a
+
+Send is undoubtedly the most important method in TelebotX. `Send()` accepts a
 `Recipient` (could be user, group or a channel) and a `Sendable`. Other types other than
-the Telebot-provided media types (`Photo`, `Audio`, `Video`, etc.) are `Sendable`.
+the TelebotX-provided media types (`Photo`, `Audio`, `Video`, etc.) are `Sendable`.
 If you create composite types of your own, and they satisfy the `Sendable` interface,
-Telebot will be able to send them out.
+TelebotX will be able to send them out.
 
 ```go
 // Sendable is any object that can send itself.
@@ -262,6 +277,7 @@ The only type at the time that doesn't fit `Send()` is `Album` and there is a re
 for that. Albums were added not so long ago, so they are slightly quirky for backwards
 compatibilities sake. In fact, an `Album` can be sent, but never received. Instead,
 Telegram returns a `[]Message`, one for each media object in the album:
+
 ```go
 p := &tele.Photo{File: tele.FromDisk("chicken.jpg")}
 v := &tele.Video{File: tele.FromURL("http://video.mp4")}
@@ -270,11 +286,13 @@ msgs, err := b.SendAlbum(user, tele.Album{p, v})
 ```
 
 ### Send options
+
 Send options are objects and flags you can pass to `Send()`, `Edit()` and friends
 as optional arguments (following the recipient and the text/media). The most
 important one is called `SendOptions`, it lets you control _all_ the properties of
 the message supported by Telegram. The only drawback is that it's rather
 inconvenient to use at times, so `Send()` supports multiple shorthands:
+
 ```go
 // regular send options
 b.Send(user, "text", &tele.SendOptions{
@@ -292,15 +310,17 @@ b.Send(user, "text", tele.Silent, tele.NoPreview)
 ```
 
 Full list of supported option-flags you can find
-[here](https://pkg.go.dev/gopkg.in/telebot.v4#Option).
+[here](https://pkg.go.dev/github.com/nullcache/telebotx#Option).
 
 ## Editable
+
 If you want to edit some existing message, you don't really need to store the
 original `*Message` object. In fact, upon edit, Telegram only requires `chat_id`
 and `message_id`. So you don't really need the Message as a whole. Also, you
 might want to store references to certain messages in the database, so I thought
-it made sense for *any* Go struct to be editable as a Telegram message, to implement
+it made sense for _any_ Go struct to be editable as a Telegram message, to implement
 `Editable`:
+
 ```go
 // Editable is an interface for all objects that
 // provide "message signature", a pair of 32-bit
@@ -320,7 +340,8 @@ type Editable interface {
 ```
 
 For example, `Message` type is Editable. Here is the implementation of `StoredMessage`
-type, provided by Telebot:
+type, provided by TelebotX:
+
 ```go
 // StoredMessage is an example struct suitable for being
 // stored in the database as-is or being embedded into
@@ -337,6 +358,7 @@ func (x StoredMessage) MessageSig() (int, int64) {
 ```
 
 Why bother at all? Well, it allows you to do things like this:
+
 ```go
 // just two integer columns in the database
 var msgs []tele.StoredMessage
@@ -353,6 +375,7 @@ I find it incredibly neat. Worth noting, at this point of time there exists
 another method in the Edit family, `EditCaption()` which is of a pretty
 rare use, so I didn't bother including it to `Edit()`, just like I did with
 `SendAlbum()` as it would inevitably lead to unnecessary complications.
+
 ```go
 var m *Message
 
@@ -361,7 +384,8 @@ bot.EditCaption(m, "new caption")
 ```
 
 ## Keyboards
-Telebot supports both kinds of keyboards Telegram provides: reply and inline
+
+TelebotX supports both kinds of keyboards Telegram provides: reply and inline
 keyboards. Any button can also act as endpoints for `Handle()`.
 
 ```go
@@ -410,6 +434,7 @@ b.Handle(&btnPrev, func(c tele.Context) error {
 ```
 
 You can use markup constructor for every type of possible button:
+
 ```go
 r := b.NewMarkup()
 
@@ -429,9 +454,10 @@ r.Login("Login", &tele.Login{...})
 ```
 
 ## Inline mode
+
 So if you want to handle incoming inline queries you better plug the `tele.OnQuery`
 endpoint and then use the `Answer()` method to send a list of inline queries
-back. I think at the time of writing, Telebot supports all of the provided result
+back. I think at the time of writing, TelebotX supports all of the provided result
 types (but not the cached ones). This is what it looks like:
 
 ```go
@@ -467,23 +493,13 @@ of `QueryResponse`.
 # Contributing
 
 1. Fork it
-2. Clone v3: `git clone -b v3 https://github.com/tucnak/telebot`
-3. Create your feature branch: `git checkout -b v3-feature`
+2. Clone: `git clone https://github.com/nullcache/telebotx`
+3. Create your feature branch: `git checkout -b feature-name`
 4. Make changes and add them: `git add .`
 5. Commit: `git commit -m "add some feature"`
-6. Push: `git push origin v3-feature`
+6. Push: `git push origin feature-name`
 7. Pull request
-
-# Donate
-
-I do coding for fun, but I also try to search for interesting solutions and
-optimize them as much as possible.
-If you feel like it's a good piece of software, I wouldn't mind a tip!
-
-Litecoin: `ltc1qskt5ltrtyg7esfjm0ftx6jnacwffhpzpqmerus`
-
-Ethereum: `0xB78A2Ac1D83a0aD0b993046F9fDEfC5e619efCAB`
 
 # License
 
-Telebot is distributed under MIT.
+TelebotX is distributed under MIT.

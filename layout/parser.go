@@ -9,8 +9,8 @@ import (
 	"text/template"
 
 	"github.com/goccy/go-yaml"
+	tele "github.com/nullcache/telebotx"
 	"github.com/spf13/viper"
-	tele "gopkg.in/telebot.v4"
 )
 
 type Settings struct {

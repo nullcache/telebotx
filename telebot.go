@@ -6,7 +6,7 @@
 //
 //	import (
 //		"time"
-//		tele "gopkg.in/telebot.v4"
+//		tele "github.com/nullcache/telebotx"
 //	)
 //
 //	func main() {
