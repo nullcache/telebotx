@@ -5,6 +5,12 @@ import (
 	"strconv"
 )
 
+// SendOption represents a send option that can be applied to a SendOptions struct.
+// This interface allows for type-safe option passing while maintaining flexibility.
+type SendOption interface {
+	applySendOption(*SendOptions)
+}
+
 // Option is a shortcut flag type for certain message features
 // (so-called options). It means that instead of passing
 // fully-fledged SendOptions* to Send(), you can use these
@@ -38,6 +44,37 @@ const (
 	// IgnoreThread is used to ignore the thread when responding to a message via context.
 	IgnoreThread
 )
+
+// applySendOption implements SendOption interface for Option.
+func (opt Option) applySendOption(target *SendOptions) {
+	switch opt {
+	case NoPreview:
+		target.DisableWebPagePreview = true
+	case Silent:
+		target.DisableNotification = true
+	case AllowWithoutReply:
+		target.AllowWithoutReply = true
+	case Protected:
+		target.Protected = true
+	case ForceReply:
+		if target.ReplyMarkup == nil {
+			target.ReplyMarkup = &ReplyMarkup{}
+		}
+		target.ReplyMarkup.ForceReply = true
+	case OneTimeKeyboard:
+		if target.ReplyMarkup == nil {
+			target.ReplyMarkup = &ReplyMarkup{}
+		}
+		target.ReplyMarkup.OneTimeKeyboard = true
+	case RemoveKeyboard:
+		if target.ReplyMarkup == nil {
+			target.ReplyMarkup = &ReplyMarkup{}
+		}
+		target.ReplyMarkup.RemoveKeyboard = true
+	case IgnoreThread:
+		// IgnoreThread is handled specially in context inheritance
+	}
+}
 
 // Placeholder is used to set input field placeholder as a send option.
 func Placeholder(text string) *SendOptions {
@@ -95,6 +132,11 @@ type SendOptions struct {
 
 	// Unique identifier of the message effect to be added to the message; for private chats only
 	EffectID string
+}
+
+// applySendOption implements SendOption interface for SendOptions.
+func (opts *SendOptions) applySendOption(target *SendOptions) {
+	*target = *opts
 }
 
 func (og *SendOptions) copy() *SendOptions {
@@ -156,6 +198,59 @@ func (b *Bot) extractOptions(how []any) *SendOptions {
 			opts.Entities = opt
 		default:
 			panic("telebot: unsupported send-option")
+		}
+	}
+
+	return opts
+}
+
+// extractSendOptions creates SendOptions from a slice of SendOption interfaces.
+// This is the new unified method for processing send options.
+func (b *Bot) extractSendOptions(options ...SendOption) *SendOptions {
+	opts := &SendOptions{
+		ParseMode: b.parseMode,
+	}
+
+	for _, option := range options {
+		if option != nil {
+			option.applySendOption(opts)
+		}
+	}
+
+	return opts
+}
+
+// extractSendOptionsFromAny creates SendOptions from a slice of any interfaces.
+// This method handles both SendOption interfaces and legacy types like ParseMode.
+func (b *Bot) extractSendOptionsFromAny(options ...any) *SendOptions {
+	opts := &SendOptions{
+		ParseMode: b.parseMode,
+	}
+
+	for _, option := range options {
+		switch opt := option.(type) {
+		case ParseMode:
+			opts.ParseMode = opt
+		case *SendOptions:
+			if opt != nil {
+				*opts = *opt.copy()
+			}
+		case *ReplyMarkup:
+			if opt != nil {
+				opts.ReplyMarkup = opt.copy()
+			}
+		case *ReplyParams:
+			opts.ReplyParams = opt
+		case *Topic:
+			opts.ThreadID = opt.ThreadID
+		case Option:
+			opt.applySendOption(opts)
+		case Entities:
+			opts.Entities = opt
+		case SendOption:
+			opt.applySendOption(opts)
+		default:
+			// For backward compatibility, ignore unknown types instead of panicking
 		}
 	}
 

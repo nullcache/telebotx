@@ -501,12 +501,12 @@ func TestBot(t *testing.T) {
 		t.Skip("CHAT_ID is required for Bot methods test")
 	}
 
-	_, err := b.Send(to, nil)
+	_, err := b.SendAny(to, nil)
 	assert.Equal(t, ErrUnsupportedWhat, err)
 	_, err = b.Edit(&Message{Chat: &Chat{}}, nil)
 	assert.Equal(t, ErrUnsupportedWhat, err)
 
-	_, err = b.Send(nil, "")
+	_, err = b.SendText(nil, "")
 	assert.Equal(t, ErrBadRecipient, err)
 	_, err = b.Forward(nil, nil)
 	assert.Equal(t, ErrBadRecipient, err)
@@ -534,7 +534,7 @@ func TestBot(t *testing.T) {
 		photo2 := *photo
 		photo2.Caption = ""
 
-		msgs, err := b.SendAlbum(to, Album{photo, &photo2}, ModeHTML)
+		msgs, err := b.SendAlbum(to, Album{photo, &photo2}, ParseModeOption(ModeHTML))
 		require.NoError(t, err)
 		assert.Len(t, msgs, 2)
 		assert.NotEmpty(t, msgs[0].AlbumID)
@@ -550,7 +550,7 @@ func TestBot(t *testing.T) {
 		photo2 := *photo
 		photo2.Caption = ""
 
-		msg, err := b.SendPaid(channel, 1, PaidAlbum{photo, &photo2}, ModeHTML)
+		msg, err := b.SendPaid(channel, 1, PaidAlbum{photo, &photo2}, ParseModeOption(ModeHTML))
 		require.NoError(t, err)
 		require.NotNil(t, msg)
 		assert.Equal(t, 1, msg.PaidMedia.Stars)
@@ -567,14 +567,14 @@ func TestBot(t *testing.T) {
 
 		sleep()
 
-		edited, err = b.EditCaption(msg, "*new caption with markdown*", ModeMarkdown)
+		edited, err = b.EditCaption(msg, "*new caption with markdown*", ParseModeOption(ModeMarkdown))
 		require.NoError(t, err)
 		assert.Equal(t, "new caption with markdown", edited.Caption)
 		assert.Equal(t, EntityBold, edited.CaptionEntities[0].Type)
 
 		sleep()
 
-		edited, err = b.EditCaption(msg, "_new caption with markdown \\(V2\\)_", ModeMarkdownV2)
+		edited, err = b.EditCaption(msg, "_new caption with markdown \\(V2\\)_", ParseModeOption(ModeMarkdownV2))
 		require.NoError(t, err)
 		assert.Equal(t, "new caption with markdown (V2)", edited.Caption)
 		assert.Equal(t, EntityItalic, edited.CaptionEntities[0].Type)
@@ -620,11 +620,11 @@ func TestBot(t *testing.T) {
 	t.Run("Edit(what=Animation)", func(t *testing.T) {})
 
 	t.Run("Send(what=string)", func(t *testing.T) {
-		msg, err = b.Send(to, t.Name())
+		msg, err = b.SendText(to, t.Name())
 		require.NoError(t, err)
 		assert.Equal(t, t.Name(), msg.Text)
 
-		rpl, err := b.Reply(msg, t.Name())
+		rpl, err := b.Reply(msg, Text(t.Name()))
 		require.NoError(t, err)
 		assert.Equal(t, rpl.Text, msg.Text)
 		assert.NotNil(t, rpl.ReplyTo)

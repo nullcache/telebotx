@@ -23,7 +23,7 @@ type API interface {
 	CloseGeneralTopic(chat *Chat) error
 	CloseTopic(chat *Chat, topic *Topic) error
 	Commands(opts ...any) ([]Command, error)
-	Copy(to Recipient, msg Editable, opts ...any) (*Message, error)
+	Copy(to Recipient, msg Editable, opts ...SendOption) (*Message, error)
 	CopyMany(to Recipient, msgs []Editable, opts ...*SendOptions) ([]Message, error)
 	CreateInviteLink(chat Recipient, link *ChatInviteLink) (*ChatInviteLink, error)
 	CreateInvoiceLink(i Invoice) (string, error)
@@ -41,8 +41,8 @@ type API interface {
 	DeleteStickerSet(name string) error
 	DeleteTopic(chat *Chat, topic *Topic) error
 	Download(file *File, localFilename string) error
-	Edit(msg Editable, what any, opts ...any) (*Message, error)
-	EditCaption(msg Editable, caption string, opts ...any) (*Message, error)
+	Edit(msg Editable, what any, opts ...SendOption) (*Message, error)
+	EditCaption(msg Editable, caption string, opts ...SendOption) (*Message, error)
 	EditGeneralTopic(chat *Chat, topic *Topic) error
 	EditInviteLink(chat Recipient, link *ChatInviteLink) (*ChatInviteLink, error)
 	EditMedia(msg Editable, media Inputtable, opts ...any) (*Message, error)
@@ -50,7 +50,7 @@ type API interface {
 	EditTopic(chat *Chat, topic *Topic) error
 	File(file *File) (io.ReadCloser, error)
 	FileByID(fileID string) (File, error)
-	Forward(to Recipient, msg Editable, opts ...any) (*Message, error)
+	Forward(to Recipient, msg Editable, opts ...SendOption) (*Message, error)
 	ForwardMany(to Recipient, msgs []Editable, opts ...*SendOptions) ([]Message, error)
 	GameScores(user Recipient, msg Editable) ([]GameHighScore, error)
 	HideGeneralTopic(chat *Chat) error
@@ -63,7 +63,7 @@ type API interface {
 	MyName(language string) (*BotInfo, error)
 	MyShortDescription(language string) (*BotInfo, error)
 	Notify(to Recipient, action ChatAction, threadID ...int) error
-	Pin(msg Editable, opts ...any) error
+	Pin(msg Editable, opts ...SendOption) error
 	ProfilePhotosOf(user *User) ([]Photo, error)
 	Promote(chat *Chat, member *ChatMember) error
 	React(to Recipient, msg Editable, r Reactions) error
@@ -72,13 +72,13 @@ type API interface {
 	ReopenGeneralTopic(chat *Chat) error
 	ReopenTopic(chat *Chat, topic *Topic) error
 	ReplaceStickerInSet(of Recipient, stickerSet, oldSticker string, sticker InputSticker) (bool, error)
-	Reply(to *Message, what any, opts ...any) (*Message, error)
+	Reply(to *Message, sendable Sendable, opts ...SendOption) (*Message, error)
 	Respond(c *Callback, resp ...*CallbackResponse) error
 	Restrict(chat *Chat, member *ChatMember) error
 	RevokeInviteLink(chat Recipient, link string) (*ChatInviteLink, error)
-	Send(to Recipient, what any, opts ...any) (*Message, error)
-	SendAlbum(to Recipient, a Album, opts ...any) ([]Message, error)
-	SendPaid(to Recipient, stars int, a PaidAlbum, opts ...any) (*Message, error)
+	Send(to Recipient, sendable Sendable, opts ...SendOption) (*Message, error)
+	SendAlbum(to Recipient, a Album, opts ...SendOption) ([]Message, error)
+	SendPaid(to Recipient, stars int, a PaidAlbum, opts ...SendOption) (*Message, error)
 	SetAdminTitle(chat *Chat, user *User, title string) error
 	SetCommands(opts ...any) error
 	SetCustomEmojiStickerSetThumb(name, id string) error
@@ -102,8 +102,8 @@ type API interface {
 	Ship(query *ShippingQuery, what ...any) error
 	StarTransactions(offset, limit int) ([]StarTransaction, error)
 	StickerSet(name string) (*StickerSet, error)
-	StopLiveLocation(msg Editable, opts ...any) (*Message, error)
-	StopPoll(msg Editable, opts ...any) (*Poll, error)
+	StopLiveLocation(msg Editable, opts ...SendOption) (*Message, error)
+	StopPoll(msg Editable, opts ...SendOption) (*Poll, error)
 	TopicIconStickers() ([]Sticker, error)
 	Unban(chat *Chat, user *User, forBanned ...bool) error
 	UnbanSenderChat(chat *Chat, sender Recipient) error

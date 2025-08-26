@@ -12,6 +12,11 @@ type Topic struct {
 	ThreadID          int    `json:"message_thread_id"`
 }
 
+// applySendOption implements SendOption interface for Topic.
+func (t *Topic) applySendOption(opts *SendOptions) {
+	opts.ThreadID = t.ThreadID
+}
+
 // CreateTopic creates a topic in a forum supergroup chat.
 func (b *Bot) CreateTopic(chat *Chat, topic *Topic) (*Topic, error) {
 	params := map[string]string{

@@ -412,6 +412,11 @@ const (
 // Entities are used to set message's text entities as a send option.
 type Entities []MessageEntity
 
+// applySendOption implements SendOption interface for Entities.
+func (entities Entities) applySendOption(opts *SendOptions) {
+	opts.Entities = entities
+}
+
 // ProximityAlert sent whenever a user in the chat triggers
 // a proximity alert set by another user.
 type ProximityAlert struct {
@@ -751,4 +756,9 @@ type ReplyParams struct {
 
 	// (Optional) Position of the quote in the original message in UTF-16 code units.
 	QuotePosition int `json:"quote_position"`
+}
+
+// applySendOption implements SendOption interface for ReplyParams.
+func (rp *ReplyParams) applySendOption(opts *SendOptions) {
+	opts.ReplyParams = rp
 }

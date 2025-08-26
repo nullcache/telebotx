@@ -149,6 +149,14 @@ const (
 	ModeHTML       ParseMode = "HTML"
 )
 
+// ParseModeOption wraps ParseMode to implement SendOption interface.
+type ParseModeOption ParseMode
+
+// applySendOption implements SendOption interface for ParseModeOption.
+func (mode ParseModeOption) applySendOption(opts *SendOptions) {
+	opts.ParseMode = ParseMode(mode)
+}
+
 // M is a shortcut for map[string]any.
 // Useful for passing arguments to the layout functions.
 type M = map[string]any

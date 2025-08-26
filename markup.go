@@ -80,6 +80,13 @@ func (r *ReplyMarkup) copy() *ReplyMarkup {
 	return &cp
 }
 
+// applySendOption implements SendOption interface for ReplyMarkup.
+func (r *ReplyMarkup) applySendOption(target *SendOptions) {
+	if r != nil {
+		target.ReplyMarkup = r.copy()
+	}
+}
+
 // Btn is a constructor button, which will later become either a reply, or an inline button.
 type Btn struct {
 	Unique          string          `json:"unique,omitempty"`

@@ -109,39 +109,39 @@ type Context interface {
 
 	// Send sends a message to the current recipient.
 	// See Send from bot.go.
-	Send(what any, opts ...any) error
+	Send(sendable Sendable, opts ...SendOption) error
 
 	// SendAlbum sends an album to the current recipient.
 	// See SendAlbum from bot.go.
-	SendAlbum(a Album, opts ...any) error
+	SendAlbum(a Album, opts ...SendOption) error
 
 	// Reply replies to the current message.
 	// See Reply from bot.go.
-	Reply(what any, opts ...any) error
+	Reply(sendable Sendable, opts ...SendOption) error
 
 	// Forward forwards the given message to the current recipient.
 	// See Forward from bot.go.
-	Forward(msg Editable, opts ...any) error
+	Forward(msg Editable, opts ...SendOption) error
 
 	// ForwardTo forwards the current message to the given recipient.
 	// See Forward from bot.go
-	ForwardTo(to Recipient, opts ...any) error
+	ForwardTo(to Recipient, opts ...SendOption) error
 
 	// Edit edits the current message.
 	// See Edit from bot.go.
-	Edit(what any, opts ...any) error
+	Edit(what any, opts ...SendOption) error
 
 	// EditCaption edits the caption of the current message.
 	// See EditCaption from bot.go.
-	EditCaption(caption string, opts ...any) error
+	EditCaption(caption string, opts ...SendOption) error
 
 	// EditOrSend edits the current message if the update is callback,
 	// otherwise the content is sent to the chat as a separate message.
-	EditOrSend(what any, opts ...any) error
+	EditOrSend(what any, opts ...SendOption) error
 
 	// EditOrReply edits the current message if the update is callback,
 	// otherwise the content is replied as a separate message.
-	EditOrReply(what any, opts ...any) error
+	EditOrReply(what any, opts ...SendOption) error
 
 	// Delete removes the current message.
 	// See Delete from bot.go.
@@ -183,6 +183,18 @@ type Context interface {
 
 	// Set saves data in the context.
 	Set(key string, val any)
+
+	// SendText sends a text message to the current recipient with type safety.
+	SendText(text string, opts ...SendOption) (*Message, error)
+
+	// SendAny provides backward compatibility for sending any type.
+	SendAny(what any, opts ...SendOption) error
+
+	// ReplyText replies to the current message with text.
+	ReplyText(text string, opts ...SendOption) error
+
+	// ReplyAny provides backward compatibility for replying with any type.
+	ReplyAny(what any, opts ...SendOption) error
 }
 
 // nativeContext is a native implementation of the Context interface.
@@ -435,9 +447,9 @@ func (c *nativeContext) ThreadID() int {
 	}
 }
 
-func (c *nativeContext) Send(what any, opts ...any) error {
-	opts = c.inheritOpts(opts...)
-	_, err := c.b.Send(c.Recipient(), what, opts...)
+func (c *nativeContext) Send(sendable Sendable, opts ...SendOption) error {
+	opts = c.inheritSendOptions(opts...)
+	_, err := c.b.Send(c.Recipient(), sendable, opts...)
 	return err
 }
 
@@ -469,39 +481,41 @@ func (c *nativeContext) inheritOpts(opts ...any) []any {
 	return opts
 }
 
-func (c *nativeContext) SendAlbum(a Album, opts ...any) error {
-	opts = c.inheritOpts(opts...)
+func (c *nativeContext) SendAlbum(a Album, opts ...SendOption) error {
+	opts = c.inheritSendOptions(opts...)
 
 	_, err := c.b.SendAlbum(c.Recipient(), a, opts...)
 	return err
 }
 
-func (c *nativeContext) Reply(what any, opts ...any) error {
+func (c *nativeContext) Reply(sendable Sendable, opts ...SendOption) error {
 	msg := c.Message()
 	if msg == nil {
 		return ErrBadContext
 	}
-	opts = c.inheritOpts(opts...)
-	_, err := c.b.Reply(msg, what, opts...)
+	opts = c.inheritSendOptions(opts...)
+	_, err := c.b.Reply(msg, sendable, opts...)
 	return err
 }
 
-func (c *nativeContext) Forward(msg Editable, opts ...any) error {
+func (c *nativeContext) Forward(msg Editable, opts ...SendOption) error {
+	opts = c.inheritSendOptions(opts...)
 	_, err := c.b.Forward(c.Recipient(), msg, opts...)
 	return err
 }
 
-func (c *nativeContext) ForwardTo(to Recipient, opts ...any) error {
+func (c *nativeContext) ForwardTo(to Recipient, opts ...SendOption) error {
 	msg := c.Message()
 	if msg == nil {
 		return ErrBadContext
 	}
+	opts = c.inheritSendOptions(opts...)
 	_, err := c.b.Forward(to, msg, opts...)
 	return err
 }
 
-func (c *nativeContext) Edit(what any, opts ...any) error {
-	opts = c.inheritOpts(opts...)
+func (c *nativeContext) Edit(what any, opts ...SendOption) error {
+	opts = c.inheritSendOptions(opts...)
 
 	if c.u.InlineResult != nil {
 		_, err := c.b.Edit(c.u.InlineResult, what, opts...)
@@ -514,8 +528,8 @@ func (c *nativeContext) Edit(what any, opts ...any) error {
 	return ErrBadContext
 }
 
-func (c *nativeContext) EditCaption(caption string, opts ...any) error {
-	opts = c.inheritOpts(opts...)
+func (c *nativeContext) EditCaption(caption string, opts ...SendOption) error {
+	opts = c.inheritSendOptions(opts...)
 
 	if c.u.InlineResult != nil {
 		_, err := c.b.EditCaption(c.u.InlineResult, caption, opts...)
@@ -528,18 +542,34 @@ func (c *nativeContext) EditCaption(caption string, opts ...any) error {
 	return ErrBadContext
 }
 
-func (c *nativeContext) EditOrSend(what any, opts ...any) error {
+func (c *nativeContext) EditOrSend(what any, opts ...SendOption) error {
 	err := c.Edit(what, opts...)
 	if err == ErrBadContext {
-		return c.Send(what, opts...)
+		// Convert what to Sendable for Send
+		switch object := what.(type) {
+		case string:
+			return c.Send(Text(object), opts...)
+		case Sendable:
+			return c.Send(object, opts...)
+		default:
+			return ErrUnsupportedWhat
+		}
 	}
 	return err
 }
 
-func (c *nativeContext) EditOrReply(what any, opts ...any) error {
+func (c *nativeContext) EditOrReply(what any, opts ...SendOption) error {
 	err := c.Edit(what, opts...)
 	if err == ErrBadContext {
-		return c.Reply(what, opts...)
+		// Convert what to Sendable for Reply
+		switch object := what.(type) {
+		case string:
+			return c.Reply(Text(object), opts...)
+		case Sendable:
+			return c.Reply(object, opts...)
+		default:
+			return ErrUnsupportedWhat
+		}
 	}
 	return err
 }
@@ -617,4 +647,72 @@ func (c *nativeContext) Get(key string) any {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 	return c.store[key]
+}
+
+// SendText sends a text message to the current recipient with type safety.
+func (c *nativeContext) SendText(text string, opts ...SendOption) (*Message, error) {
+	opts = c.inheritSendOptions(opts...)
+	_, err := c.b.Send(c.Recipient(), Text(text), opts...)
+	if err != nil {
+		return nil, err
+	}
+	// For context methods, we typically return error only, but this method returns (*Message, error)
+	// Let's get the message by calling the bot's Send method
+	return c.b.Send(c.Recipient(), Text(text), opts...)
+}
+
+// SendAny provides backward compatibility for sending any type.
+func (c *nativeContext) SendAny(what any, opts ...SendOption) error {
+	opts = c.inheritSendOptions(opts...)
+
+	// Convert what to Sendable and use type-safe Send
+	switch object := what.(type) {
+	case string:
+		return c.Send(Text(object), opts...)
+	case Sendable:
+		return c.Send(object, opts...)
+	default:
+		return ErrUnsupportedWhat
+	}
+}
+
+// inheritSendOptions processes SendOption interfaces and adds thread information if needed.
+func (c *nativeContext) inheritSendOptions(opts ...SendOption) []SendOption {
+	var ignoreThread bool
+
+	// Check if IgnoreThread option is present
+	for _, opt := range opts {
+		if o, ok := opt.(Option); ok && o == IgnoreThread {
+			ignoreThread = true
+			break
+		}
+	}
+
+	// Add thread option if needed
+	if !ignoreThread && c.ThreadID() != 0 {
+		threadOpt := &Topic{ThreadID: c.ThreadID()}
+		opts = append(opts, threadOpt)
+	}
+
+	return opts
+}
+
+// ReplyText replies to the current message with text.
+func (c *nativeContext) ReplyText(text string, opts ...SendOption) error {
+	return c.Reply(Text(text), opts...)
+}
+
+// ReplyAny provides backward compatibility for replying with any type.
+func (c *nativeContext) ReplyAny(what any, opts ...SendOption) error {
+	opts = c.inheritSendOptions(opts...)
+
+	// Convert what to Sendable and use type-safe Reply
+	switch object := what.(type) {
+	case string:
+		return c.Reply(Text(object), opts...)
+	case Sendable:
+		return c.Reply(object, opts...)
+	default:
+		return ErrUnsupportedWhat
+	}
 }

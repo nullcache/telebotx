@@ -22,6 +22,14 @@ type Sendable interface {
 	Send(*Bot, Recipient, *SendOptions) (*Message, error)
 }
 
+// Text represents a text message that can be sent.
+type Text string
+
+// Send delivers text message through bot b to recipient.
+func (t Text) Send(b *Bot, to Recipient, opt *SendOptions) (*Message, error) {
+	return b.sendText(to, string(t), opt)
+}
+
 // Send delivers media through bot b to recipient.
 func (p *Photo) Send(b *Bot, to Recipient, opt *SendOptions) (*Message, error) {
 	params := map[string]string{

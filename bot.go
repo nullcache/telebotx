@@ -280,31 +280,54 @@ func (b *Bot) NewContext(u Update) Context {
 }
 
 // Send accepts 2+ arguments, starting with destination chat, followed by
-// some Sendable (or string!) and optional send options.
+// a Sendable object and optional send options.
 //
-// NOTE:
-//
-//	Since most arguments are of type any, but have pointer
-//	method receivers, make sure to pass them by-pointer, NOT by-value.
-//
-// What is a send option exactly? It can be one of the following types:
-//
-//   - *SendOptions (the actual object accepted by Telegram API)
-//   - *ReplyMarkup (a component of SendOptions)
-//   - Option (a shortcut flag for popular options)
-//   - ParseMode (HTML, Markdown, etc)
-func (b *Bot) Send(to Recipient, what any, opts ...any) (*Message, error) {
+// This is the unified entry point for all sending operations.
+// All other Send methods (Context.Send, Sendable.Send) delegate to this method.
+func (b *Bot) Send(to Recipient, sendable Sendable, opts ...SendOption) (*Message, error) {
 	if to == nil {
 		return nil, ErrBadRecipient
 	}
 
-	sendOpts := b.extractOptions(opts)
+	sendOpts := b.extractSendOptions(opts...)
+	return sendable.Send(b, to, sendOpts)
+}
 
+// SendText is a convenience method for sending text messages.
+func (b *Bot) SendText(to Recipient, text string, opts ...SendOption) (*Message, error) {
+	return b.Send(to, Text(text), opts...)
+}
+
+// SendAny provides backward compatibility for sending any type.
+func (b *Bot) SendAny(to Recipient, what any, opts ...SendOption) (*Message, error) {
+	if to == nil {
+		return nil, ErrBadRecipient
+	}
+
+	// Convert what to Sendable and use type-safe Send
 	switch object := what.(type) {
 	case string:
-		return b.sendText(to, object, sendOpts)
+		return b.Send(to, Text(object), opts...)
 	case Sendable:
-		return object.Send(b, to, sendOpts)
+		return b.Send(to, object, opts...)
+	default:
+		return nil, ErrUnsupportedWhat
+	}
+}
+
+// ReplyText is a convenience method for replying with text messages.
+func (b *Bot) ReplyText(to *Message, text string, opts ...SendOption) (*Message, error) {
+	return b.Reply(to, Text(text), opts...)
+}
+
+// ReplyAny provides backward compatibility for replying with any type.
+func (b *Bot) ReplyAny(to *Message, what any, opts ...SendOption) (*Message, error) {
+	// Convert what to Sendable and use type-safe Reply
+	switch object := what.(type) {
+	case string:
+		return b.Reply(to, Text(object), opts...)
+	case Sendable:
+		return b.Reply(to, object, opts...)
 	default:
 		return nil, ErrUnsupportedWhat
 	}
@@ -312,7 +335,7 @@ func (b *Bot) Send(to Recipient, what any, opts ...any) (*Message, error) {
 
 // SendPaid sends multiple instances of paid media as a single message.
 // To include the caption, make sure the first PaidInputtable of an album has it.
-func (b *Bot) SendPaid(to Recipient, stars int, a PaidAlbum, opts ...any) (*Message, error) {
+func (b *Bot) SendPaid(to Recipient, stars int, a PaidAlbum, opts ...SendOption) (*Message, error) {
 	if to == nil {
 		return nil, ErrBadRecipient
 	}
@@ -321,7 +344,7 @@ func (b *Bot) SendPaid(to Recipient, stars int, a PaidAlbum, opts ...any) (*Mess
 		"chat_id":    to.Recipient(),
 		"star_count": strconv.Itoa(stars),
 	}
-	sendOpts := b.extractOptions(opts)
+	sendOpts := b.extractSendOptions(opts...)
 
 	media := make([]string, len(a))
 	files := make(map[string]File)
@@ -360,12 +383,12 @@ func (b *Bot) SendPaid(to Recipient, stars int, a PaidAlbum, opts ...any) (*Mess
 // SendAlbum sends multiple instances of media as a single message.
 // To include the caption, make sure the first Inputtable of an album has it.
 // From all existing options, it only supports tele.Silent.
-func (b *Bot) SendAlbum(to Recipient, a Album, opts ...any) ([]Message, error) {
+func (b *Bot) SendAlbum(to Recipient, a Album, opts ...SendOption) ([]Message, error) {
 	if to == nil {
 		return nil, ErrBadRecipient
 	}
 
-	sendOpts := b.extractOptions(opts)
+	sendOpts := b.extractSendOptions(opts...)
 	media := make([]string, len(a))
 	files := make(map[string]File)
 
@@ -430,19 +453,19 @@ func (b *Bot) SendAlbum(to Recipient, a Album, opts ...any) ([]Message, error) {
 
 // Reply behaves just like Send() with an exception of "reply-to" indicator.
 // This function will panic upon nil Message.
-func (b *Bot) Reply(to *Message, what any, opts ...any) (*Message, error) {
-	sendOpts := b.extractOptions(opts)
+func (b *Bot) Reply(to *Message, sendable Sendable, opts ...SendOption) (*Message, error) {
+	sendOpts := b.extractSendOptions(opts...)
 	if sendOpts == nil {
 		sendOpts = &SendOptions{}
 	}
 
 	sendOpts.ReplyTo = to
-	return b.Send(to.Chat, what, sendOpts)
+	return b.Send(to.Chat, sendable, sendOpts)
 }
 
 // Forward behaves just like Send() but of all options it only supports Silent (see Bots API).
 // This function will panic upon nil Editable.
-func (b *Bot) Forward(to Recipient, msg Editable, opts ...any) (*Message, error) {
+func (b *Bot) Forward(to Recipient, msg Editable, opts ...SendOption) (*Message, error) {
 	if to == nil {
 		return nil, ErrBadRecipient
 	}
@@ -454,7 +477,7 @@ func (b *Bot) Forward(to Recipient, msg Editable, opts ...any) (*Message, error)
 		"message_id":   msgID,
 	}
 
-	sendOpts := b.extractOptions(opts)
+	sendOpts := b.extractSendOptions(opts...)
 	b.embedSendOptions(params, sendOpts)
 
 	data, err := b.Raw("forwardMessage", params)
@@ -479,7 +502,7 @@ func (b *Bot) ForwardMany(to Recipient, msgs []Editable, opts ...*SendOptions) (
 // Copy behaves just like Forward() but the copied message doesn't have a link to the original message (see Bots API).
 //
 // This function will panic upon nil Editable.
-func (b *Bot) Copy(to Recipient, msg Editable, opts ...any) (*Message, error) {
+func (b *Bot) Copy(to Recipient, msg Editable, opts ...SendOption) (*Message, error) {
 	if to == nil {
 		return nil, ErrBadRecipient
 	}
@@ -491,7 +514,7 @@ func (b *Bot) Copy(to Recipient, msg Editable, opts ...any) (*Message, error) {
 		"message_id":   msgID,
 	}
 
-	sendOpts := b.extractOptions(opts)
+	sendOpts := b.extractSendOptions(opts...)
 	b.embedSendOptions(params, sendOpts)
 
 	data, err := b.Raw("copyMessage", params)
@@ -531,7 +554,7 @@ func (b *Bot) CopyMany(to Recipient, msgs []Editable, opts ...*SendOptions) ([]M
 //	b.Edit(m, tele.Location{42.1337, 69.4242})
 //	b.Edit(c, "edit inline message from the callback")
 //	b.Edit(r, "edit message from chosen inline result")
-func (b *Bot) Edit(msg Editable, what any, opts ...any) (*Message, error) {
+func (b *Bot) Edit(msg Editable, what any, opts ...SendOption) (*Message, error) {
 	var (
 		method string
 		params = make(map[string]string)
@@ -541,7 +564,12 @@ func (b *Bot) Edit(msg Editable, what any, opts ...any) (*Message, error) {
 	case *ReplyMarkup:
 		return b.EditReplyMarkup(msg, v)
 	case Inputtable:
-		return b.EditMedia(msg, v, opts...)
+		// Convert SendOption to any for EditMedia (which doesn't use send options)
+		anyOpts := make([]any, len(opts))
+		for i, opt := range opts {
+			anyOpts[i] = opt
+		}
+		return b.EditMedia(msg, v, anyOpts...)
 	case string:
 		method = "editMessageText"
 		params["text"] = v
@@ -575,7 +603,7 @@ func (b *Bot) Edit(msg Editable, what any, opts ...any) (*Message, error) {
 		params["message_id"] = msgID
 	}
 
-	sendOpts := b.extractOptions(opts)
+	sendOpts := b.extractSendOptions(opts...)
 	b.embedSendOptions(params, sendOpts)
 
 	data, err := b.Raw(method, params)
@@ -625,7 +653,7 @@ func (b *Bot) EditReplyMarkup(msg Editable, markup *ReplyMarkup) (*Message, erro
 //
 // If edited message is sent by the bot, returns it,
 // otherwise returns nil and ErrTrueResult.
-func (b *Bot) EditCaption(msg Editable, caption string, opts ...any) (*Message, error) {
+func (b *Bot) EditCaption(msg Editable, caption string, opts ...SendOption) (*Message, error) {
 	msgID, chatID := msg.MessageSig()
 
 	params := map[string]string{
@@ -639,7 +667,7 @@ func (b *Bot) EditCaption(msg Editable, caption string, opts ...any) (*Message, 
 		params["message_id"] = msgID
 	}
 
-	sendOpts := b.extractOptions(opts)
+	sendOpts := b.extractSendOptions(opts...)
 	b.embedSendOptions(params, sendOpts)
 
 	data, err := b.Raw("editMessageCaption", params)
@@ -996,7 +1024,7 @@ func (b *Bot) File(file *File) (io.ReadCloser, error) {
 //
 // If the message is sent by the bot, returns it,
 // otherwise returns nil and ErrTrueResult.
-func (b *Bot) StopLiveLocation(msg Editable, opts ...any) (*Message, error) {
+func (b *Bot) StopLiveLocation(msg Editable, opts ...SendOption) (*Message, error) {
 	msgID, chatID := msg.MessageSig()
 
 	params := map[string]string{
@@ -1004,7 +1032,7 @@ func (b *Bot) StopLiveLocation(msg Editable, opts ...any) (*Message, error) {
 		"message_id": msgID,
 	}
 
-	sendOpts := b.extractOptions(opts)
+	sendOpts := b.extractSendOptions(opts...)
 	b.embedSendOptions(params, sendOpts)
 
 	data, err := b.Raw("stopMessageLiveLocation", params)
@@ -1020,7 +1048,7 @@ func (b *Bot) StopLiveLocation(msg Editable, opts ...any) (*Message, error) {
 //
 // It supports ReplyMarkup.
 // This function will panic upon nil Editable.
-func (b *Bot) StopPoll(msg Editable, opts ...any) (*Poll, error) {
+func (b *Bot) StopPoll(msg Editable, opts ...SendOption) (*Poll, error) {
 	msgID, chatID := msg.MessageSig()
 
 	params := map[string]string{
@@ -1028,7 +1056,7 @@ func (b *Bot) StopPoll(msg Editable, opts ...any) (*Poll, error) {
 		"message_id": msgID,
 	}
 
-	sendOpts := b.extractOptions(opts)
+	sendOpts := b.extractSendOptions(opts...)
 	b.embedSendOptions(params, sendOpts)
 
 	data, err := b.Raw("stopPoll", params)
@@ -1059,7 +1087,7 @@ func (b *Bot) Leave(chat Recipient) error {
 //
 // It supports Silent option.
 // This function will panic upon nil Editable.
-func (b *Bot) Pin(msg Editable, opts ...any) error {
+func (b *Bot) Pin(msg Editable, opts ...SendOption) error {
 	msgID, chatID := msg.MessageSig()
 
 	params := map[string]string{
@@ -1067,7 +1095,7 @@ func (b *Bot) Pin(msg Editable, opts ...any) error {
 		"message_id": msgID,
 	}
 
-	sendOpts := b.extractOptions(opts)
+	sendOpts := b.extractSendOptions(opts...)
 	b.embedSendOptions(params, sendOpts)
 
 	_, err := b.Raw("pinChatMessage", params)
