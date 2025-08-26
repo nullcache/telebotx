@@ -58,6 +58,13 @@ func NewBot(pref Settings) (*Bot, error) {
 		handlerTimeout: pref.HandlerTimeout,
 	}
 
+	// Initialize logger
+	if pref.Log != nil {
+		bot.logger = NewLogger(*pref.Log)
+	} else {
+		bot.logger = NewNoOpLogger()
+	}
+
 	if pref.Offline {
 		bot.Me = &User{}
 	} else {
@@ -94,6 +101,7 @@ type Bot struct {
 	wg      sync.WaitGroup
 
 	handlerTimeout time.Duration
+	logger         Logger
 }
 
 // Settings represents a utility struct for passing certain
@@ -134,6 +142,10 @@ type Settings struct {
 
 	// HandlerTimeout is the timeout for each handler.
 	HandlerTimeout time.Duration
+
+	// Log contains logging configuration.
+	// If nil, logging will be disabled.
+	Log *LogConfig
 }
 
 var defaultOnError = func(err error, c Context) {

@@ -183,6 +183,9 @@ type Context interface {
 
 	// Set saves data in the context.
 	Set(key string, val any)
+
+	// Logger returns the logger instance associated with this context.
+	Logger() Logger
 }
 
 // nativeContext is a native implementation of the Context interface.
@@ -617,4 +620,12 @@ func (c *nativeContext) Get(key string) any {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 	return c.store[key]
+}
+
+func (c *nativeContext) Logger() Logger {
+	if bot, ok := c.b.(*Bot); ok {
+		return bot.logger
+	}
+	// Fallback to no-op logger if bot is not available
+	return NewNoOpLogger()
 }
