@@ -465,7 +465,7 @@ func (c *nativeContext) inheritOpts(opts ...any) []any {
 	}
 
 	switch {
-	case !ignoreThread && c.ThreadID() != 0:
+	case !ignoreThread && c.ThreadID() != 0 && c.Message().TopicMessage:
 		opts = append(opts, &Topic{ThreadID: c.ThreadID()})
 	}
 
